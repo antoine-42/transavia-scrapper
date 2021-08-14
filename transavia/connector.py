@@ -3,6 +3,9 @@ from typing import Optional, List
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class Travel:
@@ -23,6 +26,7 @@ class Flight:
 
 class TransaviaConnector:
     """Handles contact with the Transavia website through Selenium"""
+    URL_HOME = "https://www.transavia.com/fr-FR/accueil/"
     URL_SEARCH = "https://www.transavia.com/fr-FR/reservez-un-vol/vols/rechercher/"
 
     def __init__(self, headless: bool = True):
@@ -33,7 +37,16 @@ class TransaviaConnector:
             chrome_options.add_argument("--headless")
             chrome_options.add_argument("--no-sandbox")
             chrome_options.add_argument("--disable-dev-shm-usage")
-        self.driver = webdriver.Chrome(chrome_options=chrome_options)
+        # self.driver = webdriver.Chrome(chrome_options=chrome_options)
+        self.driver = webdriver.Firefox()
+
+    def get_flights(self, base) -> List[Flight]:
+        outbound_flights_selectors = base.find_element_by_css_selector(".nav-days .animation-container form")
+        for flight_date_selector in outbound_flights_selectors.find_elements_by_css_selector(".day-with-availability"):
+            flight_date_selector.find_element_by_css_selector(".button").click()
+            for flight_button in base.find_elements_by_css_selector("button.flight-result-button"):
+                flight_data = flight_button.get_attribute("value")
+                print(flight_data)
 
     def search_travel(self, travel: Travel) -> List[Flight]:
         """Find travels matching the provided travel. Ignores time, only the date is used.
@@ -41,7 +54,9 @@ class TransaviaConnector:
         :param travel: Travel object.
         :return: List of matching travels.
         """
-        self.driver.get(TransaviaConnector.URL_SEARCH)
+        self.driver.get(TransaviaConnector.URL_HOME)
+
+        WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.ID, "routeSelection_DepartureStation-input")))
 
         origin_input = self.driver.find_element_by_css_selector("input#routeSelection_DepartureStation-input")
         destination_input = self.driver.find_element_by_css_selector("input#routeSelection_ArrivalStation-input")
@@ -49,21 +64,24 @@ class TransaviaConnector:
         return_input = self.driver.find_element_by_css_selector("input#dateSelection_IsReturnFlight-datepicker")
 
         origin_input.send_keys(travel.origin)
+        origin_input.send_keys(Keys.RETURN)
         destination_input.send_keys(travel.destination)
+        destination_input.send_keys(Keys.RETURN)
+        departure_input.clear()
         departure_input.send_keys(travel.departure_date.strftime("%d-%m-%Y"))
+        departure_input.send_keys(Keys.RETURN)
+        return_input.clear()
         return_input.send_keys(travel.return_date.strftime("%d-%m-%Y"))
+        return_input.send_keys(Keys.RETURN)
         destination_input.send_keys(Keys.RETURN)
 
         outbound_box = self.driver.find_element_by_css_selector("section.flight.outbound")
-        outbound_flights_selectors = outbound_box.find_element_by_css_selector(".nav-days .animation-container form")
-        for flight_date_selector in outbound_flights_selectors.find_elements_by_css_selector(".day-with-availability"):
-            flight_date_selector.find_element_by_css_selector(".button").click()
-            for flight_button in outbound_box.find_elements_by_css_selector("button.flight-result-button"):
-                flight_data = flight_button.get_attribute("value")
-                print(flight_data)
+        flights = self.get_flights(outbound_box)
+
+        return flights
 
 
 if __name__ == "__main__":
-    t = Travel("Paris (Orly 3), France", "Amsterdam (Schiphol), Pays-Bas", date(2021, 10, 22), date(2021, 10, 22))
+    t = Travel("Paris", "Amsterdam", date(2021, 10, 22), date(2021, 10, 22))
     connector = TransaviaConnector(False)
     connector.search_travel(t)
