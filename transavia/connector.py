@@ -19,6 +19,13 @@ class Travel:
         self.departure_date = departure_date
         self.return_date = return_date
 
+    def __str__(self) -> str:
+        return (
+            f"{self.origin} | {self.destination}"
+            + f" | {self.departure_date.isoformat()}"
+            + f" | {self.return_date.isoformat()}"
+        )
+
 
 class Flight:
     def __init__(
@@ -99,27 +106,7 @@ class TransaviaConnector:
                 )
         return flights
 
-    def search_travel(self, travel: Travel) -> List[Flight]:
-        """Find travels matching the provided travel. Ignores time, only the date is used.
-
-        :param travel: Travel object.
-        :return: List of matching travels.
-        """
-        self.driver.get(TransaviaConnector.URL_HOME)
-
-        WebDriverWait(self.driver, 60).until(
-            EC.presence_of_element_located(
-                (By.ID, "routeSelection_DepartureStation-input")
-            )
-        )
-
-        try:
-            self.driver.find_element_by_css_selector(
-                "button.info-banner-button-all.button-call-to-action"
-            ).click()
-        except NoSuchElementException:
-            pass  # No cookie banner
-
+    def fill_search_form(self, travel: Travel) -> None:
         origin_input = self.driver.find_element_by_css_selector(
             "input#routeSelection_DepartureStation-input"
         )
@@ -145,6 +132,29 @@ class TransaviaConnector:
         origin_input.click()
         destination_input.send_keys(Keys.RETURN)
 
+    def search_travel(self, travel: Travel) -> List[Flight]:
+        """Find travels matching the provided travel. Ignores time, only the date is used.
+
+        :param travel: Travel object.
+        :return: List of matching travels.
+        """
+        self.driver.get(TransaviaConnector.URL_HOME)
+
+        WebDriverWait(self.driver, 60).until(
+            EC.presence_of_element_located(
+                (By.ID, "routeSelection_DepartureStation-input")
+            )
+        )
+
+        try:
+            self.driver.find_element_by_css_selector(
+                "button.info-banner-button-all.button-call-to-action"
+            ).click()
+        except NoSuchElementException:
+            pass  # No cookie banner
+
+        self.fill_search_form(travel)
+
         # Solve Captchas
 
         outbound_box = self.driver.find_element_by_css_selector(
@@ -162,4 +172,4 @@ if __name__ == "__main__":
     t = Travel("Paris", "Amsterdam", date(2021, 10, 21), date(2021, 11, 22))
     connector = TransaviaConnector(False)
     flights = connector.search_travel(t)
-    print(flights)
+    [print(f) for f in flights]
