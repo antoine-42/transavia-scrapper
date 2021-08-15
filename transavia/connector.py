@@ -192,10 +192,3 @@ class TransaviaConnector:
         flights += self.get_flights(return_box)
 
         return flights
-
-
-if __name__ == "__main__":
-    t = Travel("Paris", "Amsterdam", date(2021, 10, 21), date(2021, 11, 22))
-    connector = TransaviaConnector(False)
-    flights = connector.search_travel(t)
-    [print(f) for f in flights]
