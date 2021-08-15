@@ -60,6 +60,10 @@ class TransaviaConnector:
     URL_SEARCH = "https://www.transavia.com/fr-FR/reservez-un-vol/vols/rechercher/"
 
     def __init__(self, headless: bool = True):
+        """TransaviaConnector initializer.
+
+        :param headless: Don't display the browser window.
+        """
         self.headless = headless
 
         chrome_options = webdriver.ChromeOptions()
@@ -72,10 +76,20 @@ class TransaviaConnector:
 
     @staticmethod
     def str_to_datetime(value: str) -> datetime:
+        """Get a datetime object from the transavia string format.
+
+        :param value: str
+        :return: datetime
+        """
         return datetime.strptime(value, "%d/%m/%Y %H:%M")
 
     @staticmethod
     def deserialize_flight_button(button: WebElement) -> Flight:
+        """Deserialize a flight button.
+
+        :param button: Selenium WebElement object
+        :return: Flight object
+        """
         value = button.get_attribute("value")
         parts = [v for v in value.split("|")[1].split("~") if v and v not in [" "]]
         return Flight(
@@ -88,6 +102,11 @@ class TransaviaConnector:
         )
 
     def get_flights(self, base: WebElement) -> List[Flight]:
+        """Get the flight list contained in the base web element.
+
+        :param base: Selenium WebElement object
+        :return: Flight object list
+        """
         flights = []
         outbound_flights_selectors = base.find_element_by_css_selector(
             ".nav-days .animation-container form"
@@ -106,7 +125,20 @@ class TransaviaConnector:
                 )
         return flights
 
+    def accept_cookies(self):
+        """Accept cookies to remove the cookie banner"""
+        try:
+            self.driver.find_element_by_css_selector(
+                "button.info-banner-button-all.button-call-to-action"
+            ).click()
+        except NoSuchElementException:
+            pass  # No cookie banner
+
     def fill_search_form(self, travel: Travel) -> None:
+        """Fill the transavia flight search form, and submits it. Works on both URL_HOME and URL_SEARCH.
+
+        :param travel: Travel object
+        """
         origin_input = self.driver.find_element_by_css_selector(
             "input#routeSelection_DepartureStation-input"
         )
@@ -146,13 +178,7 @@ class TransaviaConnector:
             )
         )
 
-        try:
-            self.driver.find_element_by_css_selector(
-                "button.info-banner-button-all.button-call-to-action"
-            ).click()
-        except NoSuchElementException:
-            pass  # No cookie banner
-
+        self.accept_cookies()
         self.fill_search_form(travel)
 
         # Solve Captchas
