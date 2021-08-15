@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+
 import argparse
 from datetime import date
 
-from transavia.connector import TransaviaConnector, Travel
+from connector import TransaviaConnector, Travel
 
 
 class main:
@@ -16,10 +18,14 @@ class main:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="Transavia Scrapper")
-    parser.add_argument("-o", "--origin", help="Travel origin")
-    parser.add_argument("-t", "--to", help="Travel destination")
-    parser.add_argument("-d", "--departure-date", help="Travel departure date")
-    parser.add_argument("-r", "--return-date", help="Travel arrival date")
+    parser.add_argument("-o", "--origin", help="Travel origin", required=True)
+    parser.add_argument("-t", "--to", help="Travel destination", required=True)
+    parser.add_argument(
+        "-d", "--departure-date", help="Travel departure date", required=True
+    )
+    parser.add_argument(
+        "-r", "--return-date", help="Travel arrival date", required=True
+    )
     args = parser.parse_args()
     main(
         origin=args.origin,
